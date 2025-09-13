@@ -1,0 +1,789 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Учет калорий и БЖУ</title>
+    <style>
+        :root {
+            --primary: #4682b4;
+            --primary-dark: #36648b;
+            --secondary: #f0f8ff;
+            --danger: #ff4444;
+            --success: #4caf50;
+            --warning: #ff9800;
+            --light-gray: #f5f5f5;
+            --gray: #888;
+            --text: #333;
+        }
+        
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+        
+        body {
+            background-color: var(--light-gray);
+            padding: 20px;
+            color: var(--text);
+        }
+        
+        .container {
+            max-width: 600px;
+            margin: 0 auto;
+            background-color: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        h1 {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--primary);
+        }
+        
+        .date-header {
+            text-align: center;
+            margin-bottom: 20px;
+            color: var(--gray);
+        }
+        
+        .goals-container {
+            background-color: #fff8e1;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid var(--warning);
+        }
+        
+        .goals-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+        
+        .goal-item {
+            margin-bottom: 8px;
+        }
+        
+        .goal-progress {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+        }
+        
+        .progress-bar {
+            flex-grow: 1;
+            height: 8px;
+            background-color: #e0e0e0;
+            border-radius: 4px;
+            margin: 0 10px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            transition: width 0.3s ease;
+        }
+        
+        .progress-calories { background-color: var(--primary); }
+        .progress-protein { background-color: var(--success); }
+        .progress-fat { background-color: var(--warning); }
+        .progress-carbs { background-color: var(--danger); }
+        
+        .progress-text {
+            font-size: 12px;
+            color: var(--gray);
+            min-width: 80px;
+            text-align: right;
+        }
+        
+        .summary {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .summary-item {
+            background-color: var(--secondary);
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .summary-item h3 {
+            margin: 0;
+            color: var(--primary);
+            font-size: 14px;
+        }
+        
+        .summary-item p {
+            margin: 5px 0 0;
+            font-size: 24px;
+            font-weight: bold;
+        }
+        
+        .btn {
+            background-color: var(--primary);
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            width: 100%;
+            font-size: 16px;
+            margin-bottom: 10px;
+            transition: background-color 0.3s;
+        }
+        
+        .btn:hover {
+            background-color: var(--primary-dark);
+        }
+        
+        .btn-secondary {
+            background-color: var(--gray);
+        }
+        
+        .btn-warning {
+            background-color: var(--warning);
+        }
+        
+        .btn-danger {
+            background-color: var(--danger);
+        }
+        
+        .btn-success {
+            background-color: var(--success);
+        }
+        
+        .buttons-row {
+            display: flex;
+            gap: 10px;
+        }
+        
+        .buttons-row .btn {
+            width: auto;
+            flex: 1;
+        }
+        
+        .form-container {
+            display: none;
+            margin-top: 20px;
+        }
+        
+        .form-group {
+            margin-bottom: 15px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+        }
+        
+        input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+            font-size: 16px;
+        }
+        
+        .meal-list {
+            margin-top: 20px;
+        }
+        
+        .meal-item {
+            background-color: #f9f9f9;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid var(--primary);
+        }
+        
+        .meal-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 5px;
+        }
+        
+        .meal-name {
+            font-weight: bold;
+        }
+        
+        .meal-time {
+            color: var(--gray);
+            font-size: 0.9em;
+        }
+        
+        .meal-macros {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 5px;
+            color: var(--gray);
+        }
+        
+        .delete-btn {
+            background-color: var(--danger);
+            padding: 5px 10px;
+            font-size: 12px;
+            width: auto;
+            margin-top: 10px;
+        }
+        
+        .loader {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid var(--primary);
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .device-id-info {
+            text-align: center;
+            font-size: 12px;
+            color: var(--gray);
+            margin-top: 10px;
+        }
+        
+        @media (max-width: 480px) {
+            .summary {
+                grid-template-columns: 1fr;
+            }
+            
+            .meal-macros {
+                flex-direction: column;
+            }
+            
+            .meal-macros span {
+                margin-bottom: 3px;
+            }
+            
+            .buttons-row {
+                flex-direction: column;
+            }
+        }
+    </style>
+    <!-- Firebase App -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <!-- Firebase Realtime Database -->
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Учет калорий и БЖУ</h1>
+        
+        <div class="date-header">
+            <h2 id="current-date"></h2>
+        </div>
+        
+        <!-- Блок целей и прогресса -->
+        <div id="goals-container" class="goals-container">
+            <div class="goals-header">
+                <h3>Цели на день</h3>
+                <button class="btn btn-warning" id="set-goals-btn" style="padding: 8px 12px; font-size: 14px;">Изменить цели</button>
+            </div>
+            <div class="goal-item">
+                <div class="goal-progress">
+                    <span>Калории:</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-calories" id="calories-progress"></div>
+                    </div>
+                    <div class="progress-text" id="calories-text">0/0 ккал</div>
+                </div>
+            </div>
+            <div class="goal-item">
+                <div class="goal-progress">
+                    <span>Белки:</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-protein" id="protein-progress"></div>
+                    </div>
+                    <div class="progress-text" id="protein-text">0/0 г</div>
+                </div>
+            </div>
+            <div class="goal-item">
+                <div class="goal-progress">
+                    <span>Жиры:</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-fat" id="fat-progress"></div>
+                    </div>
+                    <div class="progress-text" id="fat-text">0/0 г</div>
+                </div>
+            </div>
+            <div class="goal-item">
+                <div class="goal-progress">
+                    <span>Углеводы:</span>
+                    <div class="progress-bar">
+                        <div class="progress-fill progress-carbs" id="carbs-progress"></div>
+                    </div>
+                    <div class="progress-text" id="carbs-text">0/0 г</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="summary">
+            <div class="summary-item">
+                <h3>Калории</h3>
+                <p id="total-calories">0</p>
+            </div>
+            <div class="summary-item">
+                <h3>Белки</h3>
+                <p id="total-protein">0</p>
+            </div>
+            <div class="summary-item">
+                <h3>Жиры</h3>
+                <p id="total-fat">0</p>
+            </div>
+            <div class="summary-item">
+                <h3>Углеводы</h3>
+                <p id="total-carbs">0</p>
+            </div>
+        </div>
+        
+        <div class="buttons-row">
+            <button class="btn" id="add-meal-btn">Добавить прием пищи</button>
+            <button class="btn btn-success" id="quick-add-btn">Быстрое добавление</button>
+        </div>
+        
+        <!-- Форма для добавления приема пищи -->
+        <div id="meal-form-container" class="form-container">
+            <div class="form-group">
+                <label for="food-name">Название блюда</label>
+                <input type="text" id="food-name" placeholder="Например: Овсяная каша">
+            </div>
+            <div class="form-group">
+                <label for="protein">Белки (г)</label>
+                <input type="number" id="protein" min="0" step="0.1" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label for="fat">Жиры (г)</label>
+                <input type="number" id="fat" min="0" step="0.1" placeholder="0">
+            </div>
+            <div class="form-group">
+                <label for="carbs">Углеводы (г)</label>
+                <input type="number" id="carbs" min="0" step="0.1" placeholder="0">
+            </div>
+            <button class="btn" id="save-meal-btn">Сохранить</button>
+            <button class="btn btn-secondary" id="cancel-meal-btn">Отмена</button>
+        </div>
+        
+        <!-- Форма для установки целей -->
+        <div id="goals-form-container" class="form-container">
+            <div class="form-group">
+                <label for="goal-calories">Цель по калориям</label>
+                <input type="number" id="goal-calories" min="0" placeholder="2000">
+            </div>
+            <div class="form-group">
+                <label for="goal-protein">Цель по белкам (г)</label>
+                <input type="number" id="goal-protein" min="0" step="0.1" placeholder="150">
+            </div>
+            <div class="form-group">
+                <label for="goal-fat">Цель по жирам (г)</label>
+                <input type="number" id="goal-fat" min="0" step="0.1" placeholder="70">
+            </div>
+            <div class="form-group">
+                <label for="goal-carbs">Цель по углеводам (г)</label>
+                <input type="number" id="goal-carbs" min="0" step="0.1" placeholder="250">
+            </div>
+            <button class="btn" id="save-goals-btn">Сохранить цели</button>
+            <button class="btn btn-secondary" id="cancel-goals-btn">Отмена</button>
+        </div>
+        
+        <div class="loader" id="loader"></div>
+        
+        <div id="meal-list" class="meal-list">
+            <!-- Список приемов пищи будет здесь -->
+        </div>
+        
+        <div class="device-id-info">
+            Данные сохраняются для этого устройства
+        </div>
+    </div>
+
+    <script>
+        // Конфигурация Firebase (замените на свою конфигурацию)
+        const firebaseConfig = {
+            apiKey: "AIzaSyA9jCTlJqIFHqv1IEkm9TINh_UX_7e-LJ8",
+            authDomain: "foodv1-b7dcd.firebaseapp.com",
+            databaseURL: "https://foodv1-b7dcd-default-rtdb.europe-west1.firebasedatabase.app",
+            projectId: "foodv1-b7dcd",
+            storageBucket: "foodv1-b7dcd.firebasestorage.app",
+            messagingSenderId: "334575348161",
+            appId: "1:334575348161:web:834c176d77250a85582740"
+        };
+        
+        
+        // Инициализация Firebase
+        firebase.initializeApp(firebaseConfig);
+        
+        // Получаем ссылки на элементы DOM
+        const currentDateEl = document.getElementById('current-date');
+        const addMealBtn = document.getElementById('add-meal-btn');
+        const quickAddBtn = document.getElementById('quick-add-btn');
+        const setGoalsBtn = document.getElementById('set-goals-btn');
+        const mealFormContainer = document.getElementById('meal-form-container');
+        const goalsFormContainer = document.getElementById('goals-form-container');
+        const saveMealBtn = document.getElementById('save-meal-btn');
+        const cancelMealBtn = document.getElementById('cancel-meal-btn');
+        const saveGoalsBtn = document.getElementById('save-goals-btn');
+        const cancelGoalsBtn = document.getElementById('cancel-goals-btn');
+        const mealList = document.getElementById('meal-list');
+        const loader = document.getElementById('loader');
+        
+        // Текущая дата
+        const today = new Date().toISOString().split('T')[0];
+        currentDateEl.textContent = new Date().toLocaleDateString('ru-RU');
+        
+        // Генерируем уникальный ID устройства
+        function getDeviceId() {
+            let deviceId = localStorage.getItem('deviceId');
+            if (!deviceId) {
+                deviceId = 'device_' + Math.random().toString(36).substr(2, 9);
+                localStorage.setItem('deviceId', deviceId);
+            }
+            return deviceId;
+        }
+        
+        const deviceId = getDeviceId();
+        
+        // Переменные для хранения данных
+        let dailyData = {
+            meals: [],
+            totals: { calories: 0, protein: 0, fat: 0, carbs: 0 }
+        };
+        
+        let dailyGoals = {
+            calories: 2000,
+            protein: 150,
+            fat: 70,
+            carbs: 250
+        };
+        
+        // Загружаем данные при запуске
+        loadDailyData();
+        loadGoals();
+        
+        // Обработчики событий
+        addMealBtn.addEventListener('click', () => {
+            mealFormContainer.style.display = 'block';
+            goalsFormContainer.style.display = 'none';
+        });
+        
+        quickAddBtn.addEventListener('click', () => {
+            // Быстрое добавление с предзаполненными значениями
+            document.getElementById('food-name').value = 'Перекус';
+            document.getElementById('protein').value = '10';
+            document.getElementById('fat').value = '5';
+            document.getElementById('carbs').value = '15';
+            mealFormContainer.style.display = 'block';
+            goalsFormContainer.style.display = 'none';
+        });
+        
+        setGoalsBtn.addEventListener('click', () => {
+            // Заполняем форму текущими целями
+            document.getElementById('goal-calories').value = dailyGoals.calories;
+            document.getElementById('goal-protein').value = dailyGoals.protein;
+            document.getElementById('goal-fat').value = dailyGoals.fat;
+            document.getElementById('goal-carbs').value = dailyGoals.carbs;
+            goalsFormContainer.style.display = 'block';
+            mealFormContainer.style.display = 'none';
+        });
+        
+        cancelMealBtn.addEventListener('click', () => {
+            mealFormContainer.style.display = 'none';
+            clearMealForm();
+        });
+        
+        cancelGoalsBtn.addEventListener('click', () => {
+            goalsFormContainer.style.display = 'none';
+        });
+        
+        saveMealBtn.addEventListener('click', () => {
+            const foodName = document.getElementById('food-name').value || 'Без названия';
+            const protein = parseFloat(document.getElementById('protein').value) || 0;
+            const fat = parseFloat(document.getElementById('fat').value) || 0;
+            const carbs = parseFloat(document.getElementById('carbs').value) || 0;
+            const calories = Math.round(protein * 4 + fat * 9 + carbs * 4);
+            
+            if (protein === 0 && fat === 0 && carbs === 0) {
+                alert('Пожалуйста, введите хотя бы одно значение БЖУ');
+                return;
+            }
+            
+            const newMeal = {
+                id: Date.now(),
+                name: foodName,
+                protein,
+                fat,
+                carbs,
+                calories,
+                timestamp: new Date().toLocaleTimeString('ru-RU'),
+                date: today
+            };
+            
+            addMealToDatabase(newMeal);
+        });
+        
+        saveGoalsBtn.addEventListener('click', () => {
+            const calories = parseInt(document.getElementById('goal-calories').value) || 0;
+            const protein = parseFloat(document.getElementById('goal-protein').value) || 0;
+            const fat = parseFloat(document.getElementById('goal-fat').value) || 0;
+            const carbs = parseFloat(document.getElementById('goal-carbs').value) || 0;
+            
+            if (calories === 0 && protein === 0 && fat === 0 && carbs === 0) {
+                alert('Пожалуйста, установите хотя бы одну цель');
+                return;
+            }
+            
+            dailyGoals = { calories, protein, fat, carbs };
+            saveGoalsToDatabase();
+            updateProgress();
+            goalsFormContainer.style.display = 'none';
+        });
+        
+        // Функции работы с данными
+        function loadDailyData() {
+            showLoader();
+            const dbRef = firebase.database().ref('devices/' + deviceId + '/nutrition/' + today);
+            
+            dbRef.once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        dailyData = snapshot.val();
+                    } else {
+                        checkLastVisitDate();
+                        dailyData = {
+                            meals: [],
+                            totals: { calories: 0, protein: 0, fat: 0, carbs: 0 }
+                        };
+                    }
+                    updateDisplay();
+                    updateProgress();
+                    hideLoader();
+                })
+                .catch((error) => {
+                    console.error('Ошибка загрузки данных:', error);
+                    hideLoader();
+                });
+        }
+        
+        function loadGoals() {
+            const goalsRef = firebase.database().ref('devices/' + deviceId + '/goals');
+            
+            goalsRef.once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        dailyGoals = snapshot.val();
+                    }
+                    updateProgress();
+                })
+                .catch((error) => {
+                    console.error('Ошибка загрузки целей:', error);
+                });
+        }
+        
+        function saveGoalsToDatabase() {
+            const goalsRef = firebase.database().ref('devices/' + deviceId + '/goals');
+            goalsRef.set(dailyGoals)
+                .catch((error) => {
+                    console.error('Ошибка сохранения целей:', error);
+                });
+        }
+        
+        function updateProgress() {
+            const remainingCalories = Math.max(0, dailyGoals.calories - dailyData.totals.calories);
+            const remainingProtein = Math.max(0, dailyGoals.protein - dailyData.totals.protein);
+            const remainingFat = Math.max(0, dailyGoals.fat - dailyData.totals.fat);
+            const remainingCarbs = Math.max(0, dailyGoals.carbs - dailyData.totals.carbs);
+            
+            // Обновляем прогресс-бары
+            document.getElementById('calories-progress').style.width = 
+                Math.min(100, (dailyData.totals.calories / dailyGoals.calories) * 100) + '%';
+            document.getElementById('protein-progress').style.width = 
+                Math.min(100, (dailyData.totals.protein / dailyGoals.protein) * 100) + '%';
+            document.getElementById('fat-progress').style.width = 
+                Math.min(100, (dailyData.totals.fat / dailyGoals.fat) * 100) + '%';
+            document.getElementById('carbs-progress').style.width = 
+                Math.min(100, (dailyData.totals.carbs / dailyGoals.carbs) * 100) + '%';
+            
+            // Обновляем текст
+            document.getElementById('calories-text').textContent = 
+                `${dailyData.totals.calories}/${dailyGoals.calories} ккал` +
+                (remainingCalories > 0 ? ` (осталось: ${remainingCalories})` : ' ✓');
+                
+            document.getElementById('protein-text').textContent = 
+                `${dailyData.totals.protein.toFixed(1)}/${dailyGoals.protein} г` +
+                (remainingProtein > 0 ? ` (осталось: ${remainingProtein.toFixed(1)})` : ' ✓');
+                
+            document.getElementById('fat-text').textContent = 
+                `${dailyData.totals.fat.toFixed(1)}/${dailyGoals.fat} г` +
+                (remainingFat > 0 ? ` (осталось: ${remainingFat.toFixed(1)})` : ' ✓');
+                
+            document.getElementById('carbs-text').textContent = 
+                `${dailyData.totals.carbs.toFixed(1)}/${dailyGoals.carbs} г` +
+                (remainingCarbs > 0 ? ` (осталось: ${remainingCarbs.toFixed(1)})` : ' ✓');
+        }
+        
+        // Остальные функции (checkLastVisitDate, saveHistory, addMealToDatabase, etc.)
+        // остаются без изменений, как в предыдущей версии
+        
+        function checkLastVisitDate() {
+            const lastVisitRef = firebase.database().ref('devices/' + deviceId + '/lastVisitDate');
+            
+            lastVisitRef.once('value')
+                .then((snapshot) => {
+                    const lastVisitDate = snapshot.val();
+                    if (lastVisitDate && lastVisitDate !== today) {
+                        saveHistory(lastVisitDate);
+                    }
+                    lastVisitRef.set(today);
+                })
+                .catch((error) => {
+                    console.error('Ошибка проверки даты:', error);
+                });
+        }
+        
+        function saveHistory(date) {
+            const historyRef = firebase.database().ref('devices/' + deviceId + '/history/' + date);
+            const dailyRef = firebase.database().ref('devices/' + deviceId + '/nutrition/' + date);
+            
+            dailyRef.once('value')
+                .then((snapshot) => {
+                    if (snapshot.exists()) {
+                        historyRef.set(snapshot.val());
+                        dailyRef.remove();
+                    }
+                })
+                .catch((error) => {
+                    console.error('Ошибка сохранения истории:', error);
+                });
+        }
+        
+        function addMealToDatabase(meal) {
+            showLoader();
+            
+            dailyData.meals.push(meal);
+            dailyData.totals.calories += meal.calories;
+            dailyData.totals.protein += meal.protein;
+            dailyData.totals.fat += meal.fat;
+            dailyData.totals.carbs += meal.carbs;
+            
+            const dbRef = firebase.database().ref('devices/' + deviceId + '/nutrition/' + today);
+            dbRef.set(dailyData)
+                .then(() => {
+                    updateDisplay();
+                    updateProgress();
+                    mealFormContainer.style.display = 'none';
+                    clearMealForm();
+                    hideLoader();
+                })
+                .catch((error) => {
+                    console.error('Ошибка сохранения данных:', error);
+                    hideLoader();
+                });
+        }
+        
+        function deleteMealFromDatabase(mealId) {
+            showLoader();
+            
+            const mealIndex = dailyData.meals.findIndex(meal => meal.id === mealId);
+            if (mealIndex === -1) {
+                hideLoader();
+                return;
+            }
+            
+            const meal = dailyData.meals[mealIndex];
+            
+            dailyData.totals.calories -= meal.calories;
+            dailyData.totals.protein -= meal.protein;
+            dailyData.totals.fat -= meal.fat;
+            dailyData.totals.carbs -= meal.carbs;
+            dailyData.meals.splice(mealIndex, 1);
+            
+            const dbRef = firebase.database().ref('devices/' + deviceId + '/nutrition/' + today);
+            dbRef.set(dailyData)
+                .then(() => {
+                    updateDisplay();
+                    updateProgress();
+                    hideLoader();
+                })
+                .catch((error) => {
+                    console.error('Ошибка удаления данных:', error);
+                    hideLoader();
+                });
+        }
+        
+        function updateDisplay() {
+            document.getElementById('total-calories').textContent = dailyData.totals.calories;
+            document.getElementById('total-protein').textContent = dailyData.totals.protein.toFixed(1);
+            document.getElementById('total-fat').textContent = dailyData.totals.fat.toFixed(1);
+            document.getElementById('total-carbs').textContent = dailyData.totals.carbs.toFixed(1);
+            
+            mealList.innerHTML = '';
+            
+            if (dailyData.meals.length === 0) {
+                mealList.innerHTML = '<p style="text-align: center; color: #888;">Приемы пищи не добавлены</p>';
+                return;
+            }
+            
+            dailyData.meals.forEach(meal => {
+                const mealEl = document.createElement('div');
+                mealEl.className = 'meal-item';
+                mealEl.innerHTML = `
+                    <div class="meal-header">
+                        <span class="meal-name">${meal.name}</span>
+                        <span class="meal-time">${meal.timestamp}</span>
+                    </div>
+                    <div class="meal-macros">
+                        <span>${meal.calories} ккал</span>
+                        <span>Б: ${meal.protein}г</span>
+                        <span>Ж: ${meal.fat}г</span>
+                        <span>У: ${meal.carbs}г</span>
+                    </div>
+                    <button class="btn delete-btn" data-id="${meal.id}">Удалить</button>
+                `;
+                mealList.appendChild(mealEl);
+            });
+            
+            document.querySelectorAll('.delete-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const id = parseInt(this.getAttribute('data-id'));
+                    if (confirm('Вы уверены, что хотите удалить этот прием пищи?')) {
+                        deleteMealFromDatabase(id);
+                    }
+                });
+            });
+        }
+        
+        function clearMealForm() {
+            document.getElementById('food-name').value = '';
+            document.getElementById('protein').value = '';
+            document.getElementById('fat').value = '';
+            document.getElementById('carbs').value = '';
+        }
+        
+        function showLoader() {
+            loader.style.display = 'block';
+        }
+        
+        function hideLoader() {
+            loader.style.display = 'none';
+        }
+    </script>
+</body>
+</html>
